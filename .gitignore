@@ -1,0 +1,7 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+GodotSharp.*.nupkg
+
+# Generated nuspecs
+GodotSharp.*.nuspec

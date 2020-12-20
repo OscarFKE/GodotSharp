@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <id>GodotSharp</id>
+        <version>%VERSION%</version>
+        <description>Godot API library.</description>
+        <authors>Godot Engine contributors</authors>
+        <projectUrl>https://github.com/raulsntos/GodotSharp</projectUrl>
+    </metadata>
+    <files>
+        <file src="bin/GodotSharp/Api/Release/GodotSharp.dll" target="lib"></file>
+        <file src="bin/GodotSharp/Api/Release/GodotSharp.pdb" target="lib"></file>
+        <file src="bin/GodotSharp/Api/Release/GodotSharp.xml" target="lib"></file>
+        <file src="bin/GodotSharp/Api/Release/GodotSharpEditor.dll" target="lib"></file>
+        <file src="bin/GodotSharp/Api/Release/GodotSharpEditor.pdb" target="lib"></file>
+        <file src="bin/GodotSharp/Api/Release/GodotSharpEditor.xml" target="lib"></file>
+    </files>
+</package>

@@ -1,0 +1,100 @@
+name: GodotSharp
+on:
+  schedule:
+    - cron: 0 0 * * *
+  workflow_dispatch:
+
+# Global Settings
+env:
+  GODOT_BASE_BRANCH: "???"
+  SCONSFLAGS: platform=server verbose=yes warnings=extra werror=yes -j8
+  SCONS_CACHE_LIMIT: 4096
+
+jobs:
+  build:
+    runs-on: "ubuntu-20.04"
+    name: GodotSharp
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Get latest release
+        run: |
+          echo GODOT_BASE_BRANCH=$(sh get_latest_release.sh "godotengine/godot") >> $GITHUB_ENV
+
+      - name: Checkout Godot repo
+        uses: actions/checkout@v2
+        with:
+          repository: godotengine/godot
+          ref: ${{env.GODOT_BASE_BRANCH}}
+          path: godot
+
+      # Install all packages (except scons)
+      - name: Configure dependencies
+        run: |
+          sudo apt-get install build-essential pkg-config libx11-dev libxcursor-dev \
+            libxinerama-dev libgl1-mesa-dev libglu-dev libasound2-dev libpulse-dev libudev-dev libxi-dev libxrandr-dev yasm
+
+      # Upload cache on completion and check it out now
+      - name: Load .scons_cache directory
+        id: linux-editor-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/.scons_cache/
+          key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+          restore-keys: |
+            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
+            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
+
+      # Use python 3.x release
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
+          architecture: "x64"
+
+      # Setup scons, print python version and scons version info
+      - name: Configuring Python packages
+        run: |
+          python -c "import sys; print(sys.version)"
+          python -m pip install scons
+          python --version
+          scons --version
+
+      - name: Compilation
+        env:
+          SCONS_CACHE: ${{github.workspace}}/.scons_cache/
+        run: |
+          cd godot
+          scons tools=yes target=release_debug module_mono_enabled=yes mono_glue=no
+          ./bin/godot_server.x11.opt.tools.64.mono --generate-mono-glue modules/mono/glue
+          scons tools=yes target=release_debug module_mono_enabled=yes
+          cp -R bin ${{github.workspace}}/bin
+
+      - name: Packaging
+        env:
+          GODOT_VERSION: ${{env.GODOT_BASE_BRANCH}}
+        run: |
+          sh pack.sh
+
+      - name: Deploy to nuget.org
+        env:
+          API_KEY: ${{secrets.NugetAPIKey}}
+        run: |
+          dotnet nuget push GodotSharp.*.nupkg --api-key ${{env.API_KEY}} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Upload DLLs
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{github.job}}_DLLs
+          path: bin/*
+          retention-days: 14
+
+      - name: Upload nupkg
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{github.job}}_nupkg
+          path: "*.nupkg"
+          retention-days: 14
