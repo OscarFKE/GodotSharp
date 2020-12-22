@@ -7,6 +7,7 @@ on:
 # Global Settings
 env:
   GODOT_BASE_BRANCH: "???"
+  GODOT_VERSION: "???"
   SCONSFLAGS: platform=server verbose=yes warnings=extra werror=yes -j8
   SCONS_CACHE_LIMIT: 4096
 
@@ -21,7 +22,9 @@ jobs:
 
       - name: Get latest release
         run: |
-          echo GODOT_BASE_BRANCH=$(sh get_latest_release.sh "godotengine/godot") >> $GITHUB_ENV
+          latest_tag=$(sh get_latest_release.sh "godotengine/godot")
+          echo GODOT_BASE_BRANCH=${latest_tag} >> $GITHUB_ENV
+          echo GODOT_VERSION=${latest_tag%"-stable"} >> $GITHUB_ENV
 
       - name: Checkout Godot repo
         uses: actions/checkout@v2
@@ -74,8 +77,6 @@ jobs:
           cp -R bin ${{github.workspace}}/bin
 
       - name: Packaging
-        env:
-          GODOT_VERSION: ${{env.GODOT_BASE_BRANCH}}
         run: |
           sh pack.sh
 
